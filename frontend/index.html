@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>StockAI Pro - AI-Powered Financial Intelligence</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface": "#0c1322",
+                        "on-surface-variant": "#c2c6d6",
+                        "surface-container": "#191f2f",
+                        "surface-container-high": "#232a3a",
+                        "surface-container-highest": "#2e3545",
+                        "surface-container-lowest": "#070e1d",
+                        "surface-container-low": "#141b2b",
+                        "outline-variant": "#424754",
+                        "outline": "#8c909f",
+                        "primary": "#3b82f6",
+                        "primary-container": "#4d8eff",
+                        "on-primary": "#002e6a",
+                        "on-primary-container": "#00285d",
+                        "secondary": "#4edea3",
+                        "tertiary": "#ffb95f",
+                        "on-surface": "#dce2f7",
+                        "on-background": "#dce2f7",
+                        "error": "#ffb4ab",
+                        "error-container": "#93000a",
+                        "background": "#0c1322",
+                    },
+                },
+            },
+        }
+    </script>
+
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background-color: #070B17;
+            color: #dce2f7;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        .glass-card {
+            background: rgba(25, 31, 47, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(59,130,246,0.4) 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .glow-button {
+            background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+            box-shadow: 0 0 20px rgba(59,130,246,0.35);
+            transition: all 0.25s ease;
+        }
+        .glow-button:hover { box-shadow: 0 0 30px rgba(59,130,246,0.55); transform: translateY(-1px); }
+        .glow-button:active { transform: translateY(0); }
+        .mesh-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image:
+                radial-gradient(circle at 15% 25%, rgba(59,130,246,0.07) 0%, transparent 50%),
+                radial-gradient(circle at 85% 75%, rgba(78,222,163,0.06) 0%, transparent 50%);
+            z-index: 0;
+        }
+        .nav-link {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 16px; border-radius: 10px;
+            transition: all 0.2s ease;
+            color: #c2c6d6; font-size: 14px;
+        }
+        .nav-link:hover { background: rgba(255,255,255,0.05); color: #dce2f7; }
+        .nav-link.active { background: rgba(59,130,246,0.12); color: #3b82f6; font-weight: 600; }
+        .stat-chip {
+            padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .buy { background: rgba(78,222,163,0.15); color: #4edea3; border: 1px solid rgba(78,222,163,0.3); }
+        .hold { background: rgba(255,185,95,0.15); color: #ffb95f; border: 1px solid rgba(255,185,95,0.3); }
+        .sell { background: rgba(255,180,171,0.15); color: #ffb4ab; border: 1px solid rgba(255,180,171,0.3); }
+        .pulse-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #4edea3;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(78,222,163,0.4); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(78,222,163,0); }
+        }
+        .score-ring { transform: rotate(-90deg); }
+        .report-content { white-space: pre-wrap; line-height: 1.8; font-size: 14px; color: #c2c6d6; }
+        .report-content h1, .report-content h2, .report-content h3 {
+            color: #dce2f7; font-weight: 700; margin: 16px 0 8px;
+        }
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 6px;
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .page { display: none; }
+        .page.active { display: flex; }
+        .score-bar {
+            height: 4px; border-radius: 4px; background: rgba(255,255,255,0.08);
+            overflow: hidden;
+        }
+        .score-bar-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+
+        /* Inline chart */
+        .sparkline { overflow: visible; }
+        .error-banner {
+            background: rgba(147,0,10,0.3); border: 1px solid rgba(255,180,171,0.3);
+            border-radius: 10px; padding: 16px 20px;
+            color: #ffb4ab; font-size: 14px;
+            display: flex; align-items: center; gap: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== LANDING PAGE ===== -->
+<div id="landing-page" class="page active flex-col min-h-screen">
+    <nav style="position:fixed;top:0;width:100%;z-index:50;background:rgba(7,11,23,0.8);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.06);">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 40px;max-width:1440px;margin:0 auto;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <span class="material-symbols-outlined" style="color:#3b82f6;font-size:28px;">insights</span>
+                <span style="font-size:20px;font-weight:700;color:#3b82f6;">StockAI Pro</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:16px;">
+                <button onclick="showPage('analysis')" style="color:#c2c6d6;font-size:14px;background:none;border:none;cursor:pointer;">Sign In</button>
+                <button onclick="showPage('analysis')" class="glow-button" style="padding:10px 22px;border-radius:8px;color:white;font-weight:700;font-size:14px;border:none;cursor:pointer;">Get Started</button>
+            </div>
+        </div>
+    </nav>
+
+    <main style="padding-top:96px;flex:1;">
+        <section style="position:relative;padding:80px 40px 100px;max-width:1440px;margin:0 auto;">
+            <div class="mesh-bg"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;position:relative;z-index:1;">
+                <div>
+                    <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:20px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);margin-bottom:24px;">
+                        <span class="material-symbols-outlined" style="color:#3b82f6;font-size:16px;">bolt</span>
+                        <span style="font-size:11px;font-weight:700;color:#3b82f6;letter-spacing:1px;text-transform:uppercase;">LSTM + Fundamental + Sentiment AI</span>
+                    </div>
+                    <h1 style="font-size:52px;font-weight:800;line-height:1.15;margin-bottom:24px;">
+                        Stock Intelligence<br/>
+                        <span style="background:linear-gradient(135deg,#3b82f6,#4edea3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Powered by AI</span>
+                    </h1>
+                    <p style="font-size:17px;color:#c2c6d6;line-height:1.7;max-width:480px;margin-bottom:36px;">
+                        Enter any ticker and get LSTM price predictions, fundamental analysis, sentiment scoring, and a full AI-generated research report — in seconds.
+                    </p>
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                        <button onclick="showPage('analysis')" class="glow-button" style="display:flex;align-items:center;gap:8px;padding:16px 32px;border-radius:12px;color:white;font-weight:700;font-size:15px;border:none;cursor:pointer;">
+                            <span>Analyze a Stock</span>
+                            <span class="material-symbols-outlined" style="font-size:20px;">trending_up</span>
+                        </button>
+                    </div>
+                    <div style="display:flex;gap:32px;margin-top:48px;">
+                        <div><div style="font-size:28px;font-weight:800;color:#3b82f6;">LSTM</div><div style="font-size:12px;color:#c2c6d6;margin-top:2px;">Price Predictor</div></div>
+                        <div><div style="font-size:28px;font-weight:800;color:#4edea3;">FinBERT</div><div style="font-size:12px;color:#c2c6d6;margin-top:2px;">Sentiment Engine</div></div>
+                        <div><div style="font-size:28px;font-weight:800;color:#ffb95f;">Gemini</div><div style="font-size:12px;color:#c2c6d6;margin-top:2px;">AI Reports</div></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="glass-card" style="border-radius:20px;padding:32px;transform:rotate(1.5deg);">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                <div style="width:40px;height:40px;border-radius:10px;background:rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center;">
+                                    <span class="material-symbols-outlined" style="color:#3b82f6;">finance</span>
+                                </div>
+                                <div>
+                                    <div style="font-family:'JetBrains Mono',monospace;font-weight:600;font-size:16px;">AAPL</div>
+                                    <div style="font-size:11px;color:#8c909f;">NASDAQ</div>
+                                </div>
+                            </div>
+                            <span class="stat-chip buy">BUY</span>
+                        </div>
+                        <div style="margin-bottom:8px;">
+                            <div style="font-size:36px;font-weight:800;">$185.92</div>
+                            <div style="color:#4edea3;font-size:13px;font-weight:600;">↑ Predicted: $198.40 (+6.7%)</div>
+                        </div>
+                        <svg viewBox="0 0 320 80" style="width:100%;margin:16px 0;" class="sparkline">
+                            <path d="M0,65 Q40,60 80,70 T160,40 T240,30 T320,10" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+                            <path d="M0,65 Q40,60 80,70 T160,40 T240,30 T320,10 L320,80 L0,80 Z" fill="url(#chartGrad)" opacity="0.15"/>
+                            <defs>
+                                <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#3b82f6"/>
+                                    <stop offset="100%" stop-color="transparent"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                            <div style="padding:12px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
+                                <div style="font-size:10px;color:#8c909f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Sentiment</div>
+                                <div style="font-weight:700;color:#4edea3;">Bullish (0.72)</div>
+                            </div>
+                            <div style="padding:12px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
+                                <div style="font-size:10px;color:#8c909f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">AI Score</div>
+                                <div style="font-weight:700;color:#3b82f6;">18 / 20</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How it works -->
+        <section style="padding:80px 40px;background:rgba(255,255,255,0.01);border-top:1px solid rgba(255,255,255,0.05);">
+            <div style="max-width:900px;margin:0 auto;text-align:center;">
+                <h2 style="font-size:32px;font-weight:800;margin-bottom:16px;">How it works</h2>
+                <p style="color:#c2c6d6;font-size:15px;margin-bottom:56px;">Four engines. One unified score.</p>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;">
+                    <div class="glass-card" style="border-radius:16px;padding:24px;text-align:left;">
+                        <div style="width:44px;height:44px;border-radius:12px;background:rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                            <span class="material-symbols-outlined" style="color:#3b82f6;">account_balance</span>
+                        </div>
+                        <div style="font-weight:700;margin-bottom:6px;">Fundamentals</div>
+                        <div style="font-size:12px;color:#c2c6d6;line-height:1.6;">P/E, EPS, ROE, margins, beta — scored from AlphaVantage.</div>
+                    </div>
+                    <div class="glass-card" style="border-radius:16px;padding:24px;text-align:left;">
+                        <div style="width:44px;height:44px;border-radius:12px;background:rgba(78,222,163,0.15);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                            <span class="material-symbols-outlined" style="color:#4edea3;">candlestick_chart</span>
+                        </div>
+                        <div style="font-weight:700;margin-bottom:6px;">Technical</div>
+                        <div style="font-size:12px;color:#c2c6d6;line-height:1.6;">MACD, RSI, volatility — computed from live price data.</div>
+                    </div>
+                    <div class="glass-card" style="border-radius:16px;padding:24px;text-align:left;">
+                        <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,185,95,0.15);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                            <span class="material-symbols-outlined" style="color:#ffb95f;">newspaper</span>
+                        </div>
+                        <div style="font-weight:700;margin-bottom:6px;">Sentiment</div>
+                        <div style="font-size:12px;color:#c2c6d6;line-height:1.6;">Yahoo Finance headlines analyzed with FinBERT NLP.</div>
+                    </div>
+                    <div class="glass-card" style="border-radius:16px;padding:24px;text-align:left;">
+                        <div style="width:44px;height:44px;border-radius:12px;background:rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                            <span class="material-symbols-outlined" style="color:#3b82f6;">model_training</span>
+                        </div>
+                        <div style="font-weight:700;margin-bottom:6px;">LSTM Prediction</div>
+                        <div style="font-size:12px;color:#c2c6d6;line-height:1.6;">60-day window neural network forecasting next-day price.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer style="padding:40px;border-top:1px solid rgba(255,255,255,0.05);text-align:center;">
+            <p style="font-size:13px;color:#424754;">© 2025 StockAI Pro. Built with LSTM, FinBERT & Gemini.</p>
+        </footer>
+    </main>
+</div>
+
+<!-- ===== MAIN APP (with sidebar) ===== -->
+<div id="app-shell" class="page" style="flex-direction:row;height:100vh;overflow:hidden;">
+
+    <!-- Sidebar -->
+    <aside style="width:240px;flex-shrink:0;background:rgba(19,25,40,0.95);border-right:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;padding:24px;overflow-y:auto;" class="custom-scrollbar">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:36px;cursor:pointer;" onclick="showPage('landing')">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(59,130,246,0.2);display:flex;align-items:center;justify-content:center;">
+                <span class="material-symbols-outlined" style="color:#3b82f6;font-size:20px;">insights</span>
+            </div>
+            <div>
+                <div style="font-weight:800;font-size:15px;color:#3b82f6;">StockAI Pro</div>
+                <div style="font-size:10px;color:#8c909f;">Research Assistant</div>
+            </div>
+        </div>
+
+        <nav style="display:flex;flex-direction:column;gap:4px;flex:1;">
+            <a class="nav-link active" id="nav-analysis" onclick="showSection('analysis');return false;" href="#">
+                <span class="material-symbols-outlined" style="font-size:20px;">analytics</span>
+                <span>Analysis</span>
+            </a>
+            <a class="nav-link" id="nav-watchlist" onclick="showSection('watchlist');return false;" href="#">
+                <span class="material-symbols-outlined" style="font-size:20px;">visibility</span>
+                <span>Watchlist</span>
+            </a>
+            <a class="nav-link" id="nav-settings" onclick="showSection('settings');return false;" href="#">
+                <span class="material-symbols-outlined" style="font-size:20px;">settings</span>
+                <span>Settings</span>
+            </a>
+        </nav>
+
+        <div style="margin-top:auto;padding-top:24px;">
+            <div style="background:rgba(59,130,246,0.07);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:16px;margin-bottom:16px;">
+                <div style="font-size:10px;font-weight:700;color:#3b82f6;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Backend Status</div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div class="pulse-dot" id="backend-dot" style="background:#424754;animation:none;"></div>
+                    <span style="font-size:12px;color:#c2c6d6;" id="backend-status">Not connected</span>
+                </div>
+                <input id="backend-url" type="text" value="http://127.0.0.1:8000" placeholder="http://127.0.0.1:8000" style="margin-top:10px;width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:6px 10px;font-size:11px;color:#dce2f7;outline:none;font-family:'JetBrains Mono',monospace;" />
+                <button onclick="pingBackend()" style="margin-top:8px;width:100%;padding:6px;border-radius:6px;background:rgba(59,130,246,0.2);border:1px solid rgba(59,130,246,0.3);color:#3b82f6;font-size:11px;font-weight:600;cursor:pointer;">Test Connection</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main content area -->
+    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;" class="custom-scrollbar" id="main-scroll">
+
+        <!-- ===== ANALYSIS SECTION ===== -->
+        <section id="section-analysis" style="flex:1;padding:0;">
+            <!-- Search header -->
+            <div style="position:sticky;top:0;z-index:30;background:rgba(7,11,23,0.85);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.06);padding:20px 36px;">
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <div style="position:relative;flex:1;max-width:500px;">
+                        <span class="material-symbols-outlined" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#8c909f;font-size:20px;">search</span>
+                        <input
+                            id="ticker-input"
+                            type="text"
+                            placeholder="Enter ticker symbol (e.g. AAPL, TSLA, MSFT)"
+                            style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:50px;padding:12px 16px 12px 44px;color:#dce2f7;font-size:14px;outline:none;transition:border 0.2s;"
+                            onkeydown="if(event.key==='Enter') analyzeStock()"
+                            onfocus="this.style.borderColor='#3b82f6'"
+                            onblur="this.style.borderColor='rgba(255,255,255,0.1)'"
+                        />
+                    </div>
+                    <button onclick="analyzeStock()" id="analyze-btn" class="glow-button" style="display:flex;align-items:center;gap:8px;padding:12px 24px;border-radius:50px;color:white;font-weight:700;font-size:14px;border:none;cursor:pointer;white-space:nowrap;">
+                        <span class="material-symbols-outlined" style="font-size:18px;">auto_awesome</span>
+                        <span>Generate Report</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results area -->
+            <div style="padding:32px 36px;" id="results-area">
+
+                <!-- Empty state -->
+                <div id="empty-state" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:100px 0;text-align:center;">
+                    <div style="width:80px;height:80px;border-radius:20px;background:rgba(59,130,246,0.1);display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
+                        <span class="material-symbols-outlined" style="font-size:40px;color:#3b82f6;">query_stats</span>
+                    </div>
+                    <h3 style="font-size:20px;font-weight:700;margin-bottom:8px;">Ready to analyze</h3>
+                    <p style="color:#8c909f;font-size:14px;max-width:360px;line-height:1.6;">Enter a stock ticker above and click Generate Report. Your FastAPI backend will run LSTM predictions, fundamentals, and news sentiment.</p>
+                    <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:28px;">
+                        <button onclick="setTicker('AAPL')" style="padding:8px 18px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#c2c6d6;font-size:13px;cursor:pointer;">AAPL</button>
+                        <button onclick="setTicker('MSFT')" style="padding:8px 18px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#c2c6d6;font-size:13px;cursor:pointer;">MSFT</button>
+                        <button onclick="setTicker('TSLA')" style="padding:8px 18px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#c2c6d6;font-size:13px;cursor:pointer;">TSLA</button>
+                        <button onclick="setTicker('NVDA')" style="padding:8px 18px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#c2c6d6;font-size:13px;cursor:pointer;">NVDA</button>
+                        <button onclick="setTicker('META')" style="padding:8px 18px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#c2c6d6;font-size:13px;cursor:pointer;">META</button>
+                    </div>
+                </div>
+
+                <!-- Loading state -->
+                <div id="loading-state" style="display:none;">
+                    <div style="margin-bottom:24px;">
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                            <div style="width:12px;height:12px;border-radius:50%;border:2px solid #3b82f6;border-top-color:transparent;animation:spin 0.8s linear infinite;"></div>
+                            <span id="loading-msg" style="font-size:14px;color:#c2c6d6;">Fetching stock data...</span>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
+                            <div class="skeleton" style="height:120px;"></div>
+                            <div class="skeleton" style="height:120px;"></div>
+                            <div class="skeleton" style="height:120px;"></div>
+                        </div>
+                        <div class="skeleton" style="height:200px;margin-bottom:16px;"></div>
+                        <div class="skeleton" style="height:300px;"></div>
+                    </div>
+                </div>
+
+                <!-- Error state -->
+                <div id="error-state" style="display:none;">
+                    <div class="error-banner">
+                        <span class="material-symbols-outlined">error</span>
+                        <div>
+                            <div style="font-weight:600;margin-bottom:2px;">Analysis Failed</div>
+                            <div id="error-msg" style="opacity:0.8;font-size:13px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result state -->
+                <div id="result-state" style="display:none;">
+
+                    <!-- Top row: ticker header + recommendation -->
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;flex-wrap:wrap;gap:16px;">
+                        <div>
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                <h2 id="res-ticker-name" style="font-size:28px;font-weight:800;font-family:'JetBrains Mono',monospace;color:#3b82f6;">---</h2>
+                                <span id="res-recommendation" class="stat-chip buy" style="font-size:14px;padding:6px 16px;">---</span>
+                            </div>
+                            <p style="font-size:13px;color:#8c909f;margin-top:4px;">Analysis generated <span id="res-timestamp"></span></p>
+                        </div>
+                        <button onclick="watchlistAdd()" style="display:flex;align-items:center;gap:8px;padding:10px 20px;border-radius:10px;background:rgba(78,222,163,0.1);border:1px solid rgba(78,222,163,0.25);color:#4edea3;font-size:13px;font-weight:600;cursor:pointer;">
+                            <span class="material-symbols-outlined" style="font-size:18px;">bookmark_add</span>
+                            Add to Watchlist
+                        </button>
+                    </div>
+
+                    <!-- Stat cards -->
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;" id="stat-cards">
+                        <div class="glass-card" style="border-radius:16px;padding:20px;">
+                            <div style="font-size:11px;color:#8c909f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Current Price</div>
+                            <div id="res-current" style="font-size:28px;font-weight:800;font-family:'JetBrains Mono',monospace;">---</div>
+                        </div>
+                        <div class="glass-card" style="border-radius:16px;padding:20px;">
+                            <div style="font-size:11px;color:#8c909f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">LSTM Predicted</div>
+                            <div id="res-predicted" style="font-size:28px;font-weight:800;font-family:'JetBrains Mono',monospace;color:#3b82f6;">---</div>
+                            <div id="res-upside" style="font-size:12px;margin-top:4px;"></div>
+                        </div>
+                        <div class="glass-card" style="border-radius:16px;padding:20px;">
+                            <div style="font-size:11px;color:#8c909f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">MACD</div>
+                            <div id="res-macd" style="font-size:28px;font-weight:800;font-family:'JetBrains Mono',monospace;">---</div>
+                            <div id="res-macd-signal" style="font-size:12px;margin-top:4px;color:#8c909f;"></div>
+                        </div>
+                        <div class="glass-card" style="border-radius:16px;padding:20px;">
+                            <div style="font-size:11px;color:#8c909f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">News Sentiment</div>
+                            <div id="res-sentiment" style="font-size:28px;font-weight:800;font-family:'JetBrains Mono',monospace;">---</div>
+                            <div id="res-sentiment-label" style="font-size:12px;margin-top:4px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- AI Report -->
+                    <div class="glass-card" style="border-radius:16px;padding:28px;margin-bottom:24px;">
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+                            <div style="width:36px;height:36px;border-radius:10px;background:rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center;">
+                                <span class="material-symbols-outlined" style="color:#3b82f6;font-size:20px;" >smart_toy</span>
+                            </div>
+                            <div>
+                                <div style="font-weight:700;font-size:16px;">Gemini AI Research Report</div>
+                                <div style="font-size:12px;color:#8c909f;">Generated by gemini-2.0-flash</div>
+                            </div>
+                        </div>
+                        <div id="res-report" class="report-content" style="max-height:500px;overflow-y:auto;" class="custom-scrollbar"></div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer style="padding:32px 36px;border-top:1px solid rgba(255,255,255,0.05);text-align:center;">
+                <p style="font-size:12px;color:#424754;">© 2025 StockAI Pro. For research purposes only. Not financial advice.</p>
+            </footer>
+        </section>
+
+        <!-- ===== WATCHLIST SECTION ===== -->
+        <section id="section-watchlist" style="display:none;flex:1;flex-direction:column;">
+            <div style="padding:28px 36px 0;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+                    <div>
+                        <h2 style="font-size:22px;font-weight:800;">Watchlist</h2>
+                        <p style="font-size:13px;color:#8c909f;margin-top:4px;">Tickers you've analyzed and saved.</p>
+                    </div>
+                    <button onclick="clearWatchlist()" style="padding:8px 16px;border-radius:8px;background:rgba(255,180,171,0.1);border:1px solid rgba(255,180,171,0.2);color:#ffb4ab;font-size:12px;font-weight:600;cursor:pointer;">Clear All</button>
+                </div>
+                <div id="watchlist-empty" style="text-align:center;padding:60px 0;color:#424754;">
+                    <span class="material-symbols-outlined" style="font-size:48px;display:block;margin-bottom:12px;">bookmark_border</span>
+                    <p>No tickers saved yet. Analyze a stock and click "Add to Watchlist".</p>
+                </div>
+                <div id="watchlist-table" style="display:none;">
+                    <div class="glass-card" style="border-radius:16px;overflow:hidden;">
+                        <table style="width:100%;border-collapse:collapse;">
+                            <thead>
+                                <tr style="border-bottom:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);">
+                                    <th style="padding:14px 20px;font-size:11px;color:#8c909f;text-transform:uppercase;letter-spacing:0.5px;text-align:left;font-weight:600;">Ticker</th>
+                                    <th style="padding:14px 20px;font-size:11px;color:#8c909f;text-transform:uppercase;letter-spacing:0.5px;text-align:left;font-weight:600;">Price</th>
+                                    <th style="padding:14px 20px;font-size:11px;color:#8c909f;text-transform:uppercase;letter-spacing:0.5px;text-align:left;font-weight:600;">Predicted</th>
+                                    <th style="padding:14px 20px;font-size:11px;color:#8c909f;text-transform:uppercase;letter-spacing:0.5px;text-align:left;font-weight:600;">Upside</th>
+                                    <th style="padding:14px 20px;font-size:11px;color:#8c909f;text-transform:uppercase;letter-spacing:0.5px;text-align:left;font-weight:600;">Signal</th>
+                                    <th style="padding:14px 20px;font-size:11px;color:#8c909f;text-transform:uppercase;letter-spacing:0.5px;text-align:left;font-weight:600;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="watchlist-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== SETTINGS SECTION ===== -->
+        <section id="section-settings" style="display:none;flex:1;padding:28px 36px;">
+            <h2 style="font-size:22px;font-weight:800;margin-bottom:6px;">Settings</h2>
+            <p style="font-size:13px;color:#8c909f;margin-bottom:32px;">Configure your API connections and preferences.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:900px;">
+                <div class="glass-card" style="border-radius:16px;padding:24px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+                        <div style="width:36px;height:36px;border-radius:10px;background:rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center;">
+                            <span class="material-symbols-outlined" style="color:#3b82f6;font-size:20px;">cloud</span>
+                        </div>
+                        <div style="font-weight:700;">Backend API</div>
+                    </div>
+                    <label style="font-size:11px;color:#8c909f;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">FastAPI Base URL</label>
+                    <input id="settings-url" type="text" value="http://localhost:8000"
+                        style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 14px;color:#dce2f7;font-size:13px;outline:none;font-family:'JetBrains Mono',monospace;margin-bottom:12px;"
+                        oninput="document.getElementById('backend-url').value=this.value"
+                    />
+                    <button onclick="saveSettings()" class="glow-button" style="width:100%;padding:10px;border-radius:8px;color:white;font-weight:700;font-size:13px;border:none;cursor:pointer;">Save & Test</button>
+                </div>
+
+                <div class="glass-card" style="border-radius:16px;padding:24px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+                        <div style="width:36px;height:36px;border-radius:10px;background:rgba(78,222,163,0.15);display:flex;align-items:center;justify-content:center;">
+                            <span class="material-symbols-outlined" style="color:#4edea3;font-size:20px;">info</span>
+                        </div>
+                        <div style="font-weight:700;">About</div>
+                    </div>
+                    <div style="font-size:13px;color:#c2c6d6;line-height:1.8;">
+                        <div style="margin-bottom:8px;"><strong style="color:#dce2f7;">Stack:</strong> FastAPI + LSTM + FinBERT + Gemini</div>
+                        <div style="margin-bottom:8px;"><strong style="color:#dce2f7;">Data:</strong> AlphaVantage + Yahoo Finance RSS</div>
+                        <div style="margin-bottom:8px;"><strong style="color:#dce2f7;">Models:</strong> Linear Regression + Keras LSTM</div>
+                        <div style="margin-bottom:8px;"><strong style="color:#dce2f7;">NLP:</strong> ProsusAI/FinBERT</div>
+                        <div><strong style="color:#dce2f7;">Reports:</strong> gemini-2.0-flash</div>
+                    </div>
+                </div>
+
+                <div class="glass-card" style="border-radius:16px;padding:24px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+                        <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,185,95,0.15);display:flex;align-items:center;justify-content:center;">
+                            <span class="material-symbols-outlined" style="color:#ffb95f;font-size:20px;">warning</span>
+                        </div>
+                        <div style="font-weight:700;">Disclaimer</div>
+                    </div>
+                    <p style="font-size:13px;color:#c2c6d6;line-height:1.7;">This tool is for research and educational purposes only. It does not constitute financial advice. Always conduct your own due diligence before making investment decisions.</p>
+                </div>
+
+                <div class="glass-card" style="border-radius:16px;padding:24px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+                        <div style="width:36px;height:36px;border-radius:10px;background:rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center;">
+                            <span class="material-symbols-outlined" style="color:#3b82f6;font-size:20px;">model_training</span>
+                        </div>
+                        <div style="font-weight:700;">Scoring Guide</div>
+                    </div>
+                    <div style="font-size:13px;color:#c2c6d6;line-height:1.9;">
+                        <div>Score ≥ 13 → <span style="color:#4edea3;font-weight:700;">BUY</span></div>
+                        <div>Score 8–12 → <span style="color:#ffb95f;font-weight:700;">HOLD</span></div>
+                        <div>Score &lt; 8 → <span style="color:#ffb4ab;font-weight:700;">SELL</span></div>
+                        <div style="margin-top:8px;font-size:11px;color:#8c909f;">Composite of fundamental (max 14), technical (max 5), sentiment (max 3), prediction (max 3) scores.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div><!-- /main content -->
+</div><!-- /app-shell -->
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+// ===========================
+// STATE
+// ===========================
+let watchlist = JSON.parse(localStorage.getItem('stockai_watchlist') || '[]');
+let lastResult = null;
+
+// ===========================
+// NAVIGATION
+// ===========================
+function showPage(page) {
+    document.getElementById('landing-page').classList.remove('active');
+    document.getElementById('app-shell').classList.remove('active');
+    if (page === 'landing') {
+        document.getElementById('landing-page').classList.add('active');
+    } else {
+        document.getElementById('app-shell').classList.add('active');
+        showSection(page === 'analysis' ? 'analysis' : page);
+    }
+}
+
+function showSection(name) {
+    ['analysis','watchlist','settings'].forEach(s => {
+        const sec = document.getElementById('section-' + s);
+        const nav = document.getElementById('nav-' + s);
+        if (sec) sec.style.display = (s === name) ? 'flex' : 'none';
+        if (sec) sec.style.flexDirection = 'column';
+        if (nav) nav.classList.toggle('active', s === name);
+    });
+    if (name === 'watchlist') renderWatchlist();
+    document.getElementById('main-scroll').scrollTop = 0;
+}
+
+// ===========================
+// BACKEND
+// ===========================
+function getBaseUrl() {
+    return (document.getElementById('backend-url').value || 'http://127.0.0.1:8000').replace(/\/$/, '');
+}
+
+async function pingBackend() {
+    const dot = document.getElementById('backend-dot');
+    const status = document.getElementById('backend-status');
+    dot.style.background = '#ffb95f';
+    dot.style.animation = 'none';
+    status.textContent = 'Testing...';
+    try {
+        const r = await fetch(getBaseUrl() + '/', { signal: AbortSignal.timeout(5000) });
+        const d = await r.json();
+        dot.style.background = '#4edea3';
+        dot.style.animation = 'pulse 2s infinite';
+        status.textContent = 'Connected ✓';
+    } catch (e) {
+        dot.style.background = '#ffb4ab';
+        dot.style.animation = 'none';
+        status.textContent = 'Unreachable';
+    }
+}
+
+// ===========================
+// ANALYSIS
+// ===========================
+function setTicker(t) {
+    document.getElementById('ticker-input').value = t;
+}
+
+function showState(state) {
+    ['empty-state','loading-state','error-state','result-state'].forEach(id => {
+        document.getElementById(id).style.display = 'none';
+    });
+    document.getElementById(state).style.display = 'block';
+}
+
+const loadingMessages = [
+    'Fetching daily price data...',
+    'Training LSTM on historical prices...',
+    'Running linear regression baseline...',
+    'Analyzing news sentiment with FinBERT...',
+    'Scoring fundamentals...',
+    'Generating Gemini AI report...',
+    'Almost done...',
+];
+
+async function analyzeStock() {
+    const ticker = document.getElementById('ticker-input').value.trim().toUpperCase();
+    if (!ticker) return;
+
+    showState('loading-state');
+    const btn = document.getElementById('analyze-btn');
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+
+    // Cycle loading messages
+    let msgIdx = 0;
+    const msgEl = document.getElementById('loading-msg');
+    msgEl.textContent = loadingMessages[0];
+    const msgTimer = setInterval(() => {
+        msgIdx = (msgIdx + 1) % loadingMessages.length;
+        msgEl.textContent = loadingMessages[msgIdx];
+    }, 4000);
+
+    try {
+        const resp = await fetch(`${getBaseUrl()}/analyze/${ticker}`, {
+            signal: AbortSignal.timeout(300000) // 5 minutes — LSTM training takes time
+        });
+        const data = await resp.json();
+        clearInterval(msgTimer);
+        btn.disabled = false;
+        btn.style.opacity = '1';
+
+        if (data.status === 'failed') {
+            document.getElementById('error-msg').textContent = data.error || 'Unknown error from backend.';
+            showState('error-state');
+            return;
+        }
+
+        lastResult = { ...data, ticker };
+        populateResults(data, ticker);
+        showState('result-state');
+
+    } catch (e) {
+        clearInterval(msgTimer);
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        document.getElementById('error-msg').textContent = e.message + (e.message.includes('fetch') ? ' — Make sure your FastAPI backend is running.' : '');
+        showState('error-state');
+    }
+}
+
+function populateResults(response, ticker) {
+
+    console.log("Backend response:", response);
+
+    // handles both {data:{}} and direct {}
+    const data = response.data || response;
+
+
+    document.getElementById('res-ticker-name').textContent = ticker;
+
+    document.getElementById('res-timestamp').textContent =
+        new Date().toLocaleString();
+
+
+
+    // PRICE
+    const current = Number(data.current_price || 0);
+    const predicted = Number(data.predicted_price || 0);
+
+
+    document.getElementById('res-current').textContent =
+        '$' + current.toFixed(2);
+
+
+    document.getElementById('res-predicted').textContent =
+        '$' + predicted.toFixed(2);
+
+
+
+    // UPSIDE
+    const upside =
+        current
+        ? ((predicted-current)/current*100)
+        : 0;
+
+
+    document.getElementById('res-upside').textContent =
+        (upside >= 0 ? '↑ +' : '↓ ')
+        + upside.toFixed(2)
+        + '% vs current';
+
+
+    document.getElementById('res-upside').style.color =
+        upside >= 0 ? '#4edea3' : '#ffb4ab';
+
+
+
+    // MACD
+    document.getElementById('res-macd').textContent =
+        Number(data.macd || 0).toFixed(4);
+
+
+    document.getElementById('res-macd-signal').textContent =
+        "Signal: " + Number(data.signal || 0).toFixed(4);
+
+
+
+    // RSI
+    const rsi = Number(data.rsi || 0);
+
+    document.getElementById('res-sentiment').textContent =
+        "RSI " + rsi.toFixed(2);
+
+
+    document.getElementById('res-sentiment-label').textContent =
+        rsi > 70
+        ? "Overbought"
+        : rsi < 30
+        ? "Oversold"
+        : "Neutral";
+
+
+
+    document.getElementById('res-recommendation').textContent =
+        data.recommendation || "AI";
+
+
+
+    document.getElementById('res-report').textContent =
+
+`
+Stock: ${ticker}
+
+Current Price:
+$${current.toFixed(2)}
+
+Predicted Price:
+$${predicted.toFixed(2)}
+
+RSI:
+${rsi.toFixed(2)}
+
+MACD:
+${Number(data.macd || 0).toFixed(4)}
+
+Volatility:
+${Number(data.volatility || 0).toFixed(4)}
+
+`;
+}
+// ===========================
+// WATCHLIST
+// ===========================
+function watchlistAdd() {
+    if (!lastResult) return;
+    const existing = watchlist.find(w => w.ticker === lastResult.ticker);
+    if (!existing) {
+        watchlist.unshift({
+            ticker: lastResult.ticker,
+            current_price: lastResult.current_price,
+            predicted_price: lastResult.predicted_price,
+            recommendation: lastResult.recommendation,
+            sentiment: lastResult.sentiment,
+            added: new Date().toISOString()
+        });
+        localStorage.setItem('stockai_watchlist', JSON.stringify(watchlist));
+        alert(`${lastResult.ticker} added to watchlist!`);
+    } else {
+        alert(`${lastResult.ticker} is already in your watchlist.`);
+    }
+}
+
+function clearWatchlist() {
+    if (confirm('Clear all watchlist items?')) {
+        watchlist = [];
+        localStorage.setItem('stockai_watchlist', JSON.stringify(watchlist));
+        renderWatchlist();
+    }
+}
+
+function removeFromWatchlist(ticker) {
+    watchlist = watchlist.filter(w => w.ticker !== ticker);
+    localStorage.setItem('stockai_watchlist', JSON.stringify(watchlist));
+    renderWatchlist();
+}
+
+function renderWatchlist() {
+    const empty = document.getElementById('watchlist-empty');
+    const table = document.getElementById('watchlist-table');
+    const body = document.getElementById('watchlist-body');
+
+    if (watchlist.length === 0) {
+        empty.style.display = 'block';
+        table.style.display = 'none';
+        return;
+    }
+
+    empty.style.display = 'none';
+    table.style.display = 'block';
+
+    body.innerHTML = watchlist.map(w => {
+        const current = parseFloat(w.current_price) || 0;
+        const predicted = parseFloat(w.predicted_price) || 0;
+        const upside = current > 0 ? ((predicted - current) / current * 100) : 0;
+        const rec = (w.recommendation || 'N/A').toUpperCase();
+        const recClass = rec === 'BUY' ? 'buy' : rec === 'HOLD' ? 'hold' : 'sell';
+        return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+            <td style="padding:16px 20px;">
+                <div style="font-family:'JetBrains Mono',monospace;font-weight:700;color:#3b82f6;font-size:15px;">${w.ticker}</div>
+            </td>
+            <td style="padding:16px 20px;font-family:'JetBrains Mono',monospace;">$${parseFloat(w.current_price).toFixed(2)}</td>
+            <td style="padding:16px 20px;font-family:'JetBrains Mono',monospace;color:#3b82f6;">$${parseFloat(w.predicted_price).toFixed(2)}</td>
+            <td style="padding:16px 20px;font-family:'JetBrains Mono',monospace;color:${upside >= 0 ? '#4edea3' : '#ffb4ab'};">${upside >= 0 ? '+' : ''}${upside.toFixed(1)}%</td>
+            <td style="padding:16px 20px;"><span class="stat-chip ${recClass}">${rec}</span></td>
+            <td style="padding:16px 20px;">
+                <button onclick="reanalyze('${w.ticker}')" style="padding:6px 12px;border-radius:6px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);color:#3b82f6;font-size:12px;cursor:pointer;margin-right:8px;">Re-analyze</button>
+                <button onclick="removeFromWatchlist('${w.ticker}')" style="padding:6px 12px;border-radius:6px;background:rgba(255,180,171,0.1);border:1px solid rgba(255,180,171,0.2);color:#ffb4ab;font-size:12px;cursor:pointer;">Remove</button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function reanalyze(ticker) {
+    showSection('analysis');
+    document.getElementById('ticker-input').value = ticker;
+    analyzeStock();
+}
+
+// ===========================
+// SETTINGS
+// ===========================
+function saveSettings() {
+    const url = document.getElementById('settings-url').value;
+    document.getElementById('backend-url').value = url;
+    pingBackend();
+}
+
+// ===========================
+// INIT
+// ===========================
+showPage('landing');
+</script>
+</body>
+</html>
