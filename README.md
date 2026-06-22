@@ -1,4 +1,4 @@
-# 📈 AlphaAgent — Autonomous AI Stock Research & Market Intelligence Platform
+# 📈 QuantIntel AI — Autonomous AI Stock Research & Market Intelligence Platform
 
 ## Overview
 
