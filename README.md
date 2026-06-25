@@ -2,7 +2,7 @@
 
 ## Overview
 
-AlphaAgent is an AI-powered financial research platform that transforms raw market data into structured, data-driven investment insights.
+QuantIntel AI is an AI-powered financial research platform that transforms raw market data into structured, data-driven investment insights.
 
 Instead of functioning as a traditional stock prediction model that only produces future price estimates, AlphaAgent is designed as an end-to-end financial intelligence system that combines market data engineering, machine learning, quantitative analysis, and automated reporting.
 
