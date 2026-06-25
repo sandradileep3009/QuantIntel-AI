@@ -8,7 +8,7 @@ Instead of functioning as a traditional stock prediction model that only produce
 
 The platform collects historical market information, processes financial features, executes predictive analysis, evaluates model performance, and delivers insights through an interactive analytics dashboard.
 
-AlphaAgent focuses on building a bridge between quantitative models and human-readable financial research by creating a modular AI-driven stock analysis workflow.
+QuantIntel AI focuses on building a bridge between quantitative models and human-readable financial research by creating a modular AI-driven stock analysis workflow.
 
 ⚠️ This project is developed for educational and research purposes only. It does not provide financial advice and should not be used as a real trading system.
 
@@ -276,6 +276,16 @@ Future Enhancements:
 ## Resume Highlight
 
 Built AlphaAgent, an AI-powered stock research and market intelligence platform using Python, FastAPI, machine learning, and financial data pipelines to analyze market behavior, generate predictive signals, and deliver automated financial insights through an interactive analytics dashboard.
+
+## Demo
+
+### Dashboard
+
+![Dashboard Screenshot](assets/dashboard.png)
+
+### Prediction Output
+
+![Prediction Screenshot](assets/prediction.png)
 
 ## Author
 
